@@ -4,94 +4,132 @@ from tkinter import *
 
 Width, Height = 300, 300
 Radius = 5
-x0, y0, x1, y1, x2, y2 = 50, 50, 50, 250, 250, 250
-selete_point = -1
 
-def dist(x1, y1, x2, y2):
-	return ((x1-x2)**2+(y1-y2)**2)**0.5
 
-def create_point(canvas, x, y):
-	return canvas.create_oval(x-Radius, y-Radius, x+Radius, y+Radius, fill="blue", activefill="lightblue")
+class Point:
 
-def set_point(event):
-	global selete_point
-	if abs(event.x-x0)<Radius and abs(event.y-y0)<Radius:
-		selete_point = 0
-	elif abs(event.x-x2)<Radius and abs(event.y-y2)<Radius:
-		selete_point = 2
-	else:
-		select_point = -1
+	def __init__(self, x=0, y=0):
+		self.x = x
+		self.y = y
+	
+	def dist(self, p):
+		return ((self.x-p.x)**2+(self.y-p.y)**2)**0.5
+	
+	def within(self, x, y, r):
+		return abs(self.x-x)<r and abs(self.y-y)<r
 
-def poll(event):
-	global selete_point, x0, y0, x1, y1, x2, y2
-	if selete_point==0:
-		y0 = min(max(event.y, Radius), Height-Radius)
-		draw.coords(pointA, x0-Radius, y0-Radius, x0+Radius, y0+Radius)
-		draw.coords(textA, x0-3*Radius, y0)
-		draw.coords(triangle, x0, y0, x1, y1, x2, y2)
 
-		labelA["text"] = "A = ({}, {})".format(x0, y0)
-		lineAB["text"] = "AB = {:.2f}".format(dist(x0, y0, x1, y1))
-		lineAB2["text"] = "AB^2 = {:.2f}".format(dist(x0, y0, x1, y1)**2)
-		lineAC["text"] = "AC = {:.2f}".format(dist(x0, y0, x2, y2))
-		lineAC2["text"] = "AC^2 = {:.2f}".format(dist(x0, y0, x2, y2)**2)
-	elif selete_point==2:
-		x2 = min(max(event.x, Radius), Width-Radius)
-		draw.coords(pointC, x2-Radius, y2-Radius, x2+Radius, y2+Radius)
-		draw.coords(textC, x2, y2+3*Radius)
-		draw.coords(triangle, x0, y0, x1, y1, x2, y2)
+class PointLabel(Label):
 
-		labelC["text"] = "C = ({}, {})".format(x2, y2)
-		lineBC["text"] = "BC = {:.2f}".format(dist(x1, y1, x2, y2))
-		lineBC2["text"] = "BC^2 = {:.2f}".format(dist(x1, y1, x2, y2)**2)
-		lineAC["text"] = "AC = {:.2f}".format(dist(x0, y0, x2, y2))
-		lineAC2["text"] = "AC^2 = {:.2f}".format(dist(x0, y0, x2, y2)**2)
+	def __init__(self, parent, label, p):
+		Label.__init__(self, parent, text="{} = ({}, {})".format(label, p.x, p.y), font="Arial", width=15, anchor=W)
+		self.label = label
+	
+	def text(self, p):
+		self["text"] = "{} = ({}, {})".format(self.label, p.x, p.y)
 
-def release_point(event):
-	global selete_point
-	selete_point = -1
+
+class LineLabel(Label):
+	
+	def __init__(self, parent, label, dist=0.0):
+		Label.__init__(self, parent, text="{} = {:.2f}".format(label, dist), font="Arial", width=15, anchor=W)
+		self.label = label
+
+	def text(self, dist):
+		self["text"] = "{} = {:.2f}".format(self.label, dist)
+
+
+class DrawingBoard(Canvas):
+
+	def __init__(self, parent, width, height):
+		Canvas.__init__(self, parent, width=width, height=height)
+		self.select_point = -1
+		self.bind("<Button-1>", self.set_point)
+		self.bind("<B1-Motion>", self.poll)
+		self.bind("<ButtonRelease-1>", self.release_point)
+	
+	def create_point(self, p):
+		return self.create_oval(p.x-Radius, p.y-Radius, p.x+Radius, p.y+Radius, fill="blue", activefill="lightblue")
+
+	def set_point(self, event):
+		if p0.within(event.x, event.y, Radius):
+			self.select_point = 0
+		elif p2.within(event.x, event.y, Radius):
+			self.select_point = 2
+		else:
+			self.select_point = -1
+
+	def poll(self, event):
+		if self.select_point==0:
+			p0.y = min(max(event.y, Radius), Height-Radius)
+			self.coords(pointA, p0.x-Radius, p0.y-Radius, p0.x+Radius, p0.y+Radius)
+			self.coords(textA, p0.x-3*Radius, p0.y)
+			self.coords(triangle, p0.x, p0.y, p1.x, p1.y, p2.x, p2.y)
+
+			labelA.text(p0)
+			lineAB.text(p0.dist(p1))
+			lineAB2.text(p0.dist(p1)**2)
+			lineAC.text(p0.dist(p2))
+			lineAC2.text(p0.dist(p2)**2)
+		elif self.select_point==2:
+			p2.x = min(max(event.x, Radius), Width-Radius)
+			self.coords(pointC, p2.x-Radius, p2.y-Radius, p2.x+Radius, p2.y+Radius)
+			self.coords(textC, p2.x, p2.y+3*Radius)
+			self.coords(triangle, p0.x, p0.y, p1.x, p1.y, p2.x, p2.y)
+
+			labelC.text(p2)
+			lineBC.text(p1.dist(p2))
+			lineBC2.text(p1.dist(p2)**2)
+			lineAC.text(p0.dist(p2))
+			lineAC2.text(p0.dist(p2)**2)
+
+	def release_point(self, event):
+		self.select_point = -1
+
+
+p0 = Point(50, 50)
+p1 = Point(50, 250)
+p2 = Point(250, 250)
 
 app = Tk(className="Triangle")
 app.config(padx=10, pady=10)
 
 board = Frame(app, padx=10, pady=10)
 board.pack()
-labelA = Label(board, text="A = ({}, {})".format(x0, y0), font="Arial", width=15, anchor=W)
+labelA = PointLabel(board, "A", p0)
 labelA.grid(row=1, column=1)
-labelB = Label(board, text="B = ({}, {})".format(x1, y1), font="Arial", width=15, anchor=W)
+labelB = PointLabel(board, "B", p1)
 labelB.grid(row=2, column=1)
-labelC = Label(board, text="C = ({}, {})".format(x2, y2), font="Arial", width=15, anchor=W)
+labelC = PointLabel(board, "C", p2)
 labelC.grid(row=3, column=1)
 
-lineAB = Label(board, text="AB = {:.2f}".format(dist(x0, y0, x1, y1)), font="Arial", width=15, anchor=W)
+lineAB = LineLabel(board, "AB", p0.dist(p1))
 lineAB.grid(row=1, column=2)
-lineAB2 = Label(board, text="AB^2 = {:.2f}".format(dist(x0, y0, x1, y1)**2), font="Arial", width=15, anchor=W)
+lineAB2 = LineLabel(board, "AB^2", p0.dist(p1)**2)
 lineAB2.grid(row=1, column=3)
 
-lineBC = Label(board, text="BC = {:.2f}".format(dist(x1, y1, x2, y2)), font="Arial", width=15, anchor=W)
+lineBC = LineLabel(board, "BC", p1.dist(p2))
 lineBC.grid(row=2, column=2)
-lineBC2 = Label(board, text="BC^2 = {:.2f}".format(dist(x1, y1, x2, y2)**2), font="Arial", width=15, anchor=W)
+lineBC2 = LineLabel(board, "BC^2", p1.dist(p2)**2)
 lineBC2.grid(row=2, column=3)
 
-lineAC = Label(board, text="AC = {:.2f}".format(dist(x0, y0, x2, y2)), font="Arial", width=15, anchor=W)
+lineAC = LineLabel(board, "AC", p0.dist(p2))
 lineAC.grid(row=3, column=2)
-lineAC2 = Label(board, text="AC^2 = {:.2f}".format(dist(x0, y0, x2, y2)**2), font="Arial", width=15, anchor=W)
+lineAC2 = LineLabel(board, "AC^2", p0.dist(p2)**2)
 lineAC2.grid(row=3, column=3)
 
 Label(board, text="AB^2 + BC^2 = AC^2", font="Arial").grid(row=4, column=2, pady=10)
 
-draw = Canvas(app, width=Width, height=Height)
+draw = DrawingBoard(app, width=Width, height=Height)
 draw.pack()
 
-triangle = draw.create_polygon(x0, y0, x1, y1, x2, y2, fill="red")
-pointA = create_point(draw, x0, y0)
-textA = draw.create_text(x0-3*Radius, y0, text="A")
-pointB = create_point(draw, x1, y1)
-textB = draw.create_text(x1-3*Radius, y1+3*Radius, text="B")
-pointC = create_point(draw, x2, y2)
-textC = draw.create_text(x2, y2+3*Radius, text="C")
-draw.bind("<Button-1>", set_point)
-draw.bind("<B1-Motion>", poll)
-draw.bind("<ButtonRelease-1>", release_point)
+triangle = draw.create_polygon(p0.x, p0.y, p1.x, p1.y, p2.x, p2.y, fill="red")
+pointA = draw.create_point(p0)
+textA = draw.create_text(p0.x-3*Radius, p0.y, text="A")
+pointB = draw.create_point(p1)
+textB = draw.create_text(p1.x-3*Radius, p1.y+3*Radius, text="B")
+pointC = draw.create_point(p2)
+textC = draw.create_text(p2.x, p2.y+3*Radius, text="C")
 
 mainloop()
+
